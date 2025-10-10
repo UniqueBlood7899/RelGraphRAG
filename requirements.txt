@@ -1,0 +1,14 @@
+# Core
+sqlalchemy==2.0.32
+pandas==2.2.3
+pyyaml==6.0.2
+
+# LLM + Embeddings
+openai==1.45.0
+
+# Utilities
+tqdm==4.66.5
+python-dotenv==1.0.1
+
+# For JSON pretty output / optional dev tools
+rich==13.9.2
