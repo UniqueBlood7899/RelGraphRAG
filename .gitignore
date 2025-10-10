@@ -179,6 +179,9 @@ $RECYCLE.BIN/
 *.lnk
 
 # Project-specific
+# Data directory (contains sensitive or large data files)
+data/
+
 # Temporary files
 *.tmp
 *.temp
