@@ -60,38 +60,51 @@ def extract_json_from_response(text: str) -> str:
 
 
 def generate_ontology(schema_dict: dict):
-    """Use Gemini to generate ontology."""
-    # Simplified prompt to reduce complexity
-    prompt = f"""Convert this database schema to a JSON ontology.
+    """Use Gemini to generate a more complete ontology with foreign-key reasoning."""
+    prompt = f"""
+You are an expert data modeler.
 
-For each table, create an entry with:
-- class_label: semantic meaning (Person, Product, etc.)
-- properties: list of column names that are attributes
-- relationships: list of connections to other tables
+Convert this relational schema into a semantic ontology suitable for knowledge graphs.
 
-Return ONLY the JSON object without any markdown formatting.
+Rules:
+1. Create one ontology class per table.
+2. Assign each class a semantic type (e.g., Person, Product, Event, Transaction, etc.).
+3. Detect explicit relationships (from foreign keys) and implicit ones (from column name overlaps).
+4. Build hierarchical dependencies (e.g., InvoiceLine belongs_to Invoice).
+5. Normalize relation names to uppercase verbs (e.g., PURCHASED, CONTAINS, BELONGS_TO).
+6. Output valid JSON in this format:
 
-Schema: {json.dumps(schema_dict, indent=2)}
-
-Output format:
 {{
-  "TableName": {{
-    "class_label": "SemanticLabel",
-    "properties": ["col1", "col2"],
-    "relationships": ["relates to OtherTable"]
-  }}
+  "classes": {{
+     "Customer": {{
+        "label": "Person",
+        "properties": ["CustomerId", "FirstName", "LastName", "Email"]
+     }},
+     "Invoice": {{
+        "label": "Transaction",
+        "properties": ["InvoiceId", "InvoiceDate", "Total"]
+     }}
+  }},
+  "relationships": [
+     {{"source": "Customer", "relation": "PURCHASED", "target": "Invoice"}},
+     {{"source": "Invoice", "relation": "CONTAINS", "target": "InvoiceLine"}}
+  ]
 }}
-"""
 
-    console.print("[cyan]Generating ontology...[/cyan]")
-    model = genai.GenerativeModel(MODEL)
+Schema:
+{json.dumps(schema_dict, indent=2)}
+
+"""
     
-    # Increased token limit and adjusted parameters
+    console.print("[cyan]Generating ontology...[/cyan]")
+    model = genai.GenerativeModel("gemini-2.5-pro")
+    
+    # Configure generation parameters for more consistent output
     generation_config = genai.types.GenerationConfig(
-        temperature=0.2,
-        top_p=0.9,
-        top_k=50,
-        max_output_tokens=8192,  # Increased from 2048
+        temperature=0.1,
+        top_p=0.8,
+        top_k=40,
+        max_output_tokens=8192,
     )
     
     try:
@@ -122,11 +135,11 @@ Output format:
             return parsed_json
         except json.JSONDecodeError:
             console.print(f"[red]Could not fix JSON. Saving raw output.[/red]")
-            return {"error": "Invalid JSON", "raw_output": text}
+            return {"raw_output": text}
     
     except Exception as e:
         console.print(f"[red]API Error: {e}[/red]")
-        return {"error": str(e)}
+        return {"raw_output": text}
 
 
 def fix_truncated_json(json_text: str) -> str:
