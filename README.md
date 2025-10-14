@@ -2,8 +2,6 @@
 
 [![Python](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.104.1-green.svg)](https://fastapi.tiangolo.com/)
-[![Neo4j](https://img.shields.io/badge/Neo4j-5.22.0-blue.svg)](https://neo4j.com/)
-[![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
 > **Transform any relational database into an intelligent knowledge graph for advanced RAG (Retrieval-Augmented Generation) applications**
 
@@ -190,7 +188,7 @@ We welcome contributions! Please see our Contributing Guidelines for details.
 5. Open a Pull Request
 
 
-## 🙏 Acknowledgments
+## Acknowledgments
 
 - [Neo4j](https://neo4j.com/) for graph database technology
 - [Sentence Transformers](https://www.sbert.net/) for semantic embeddings
