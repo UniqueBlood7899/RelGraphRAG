@@ -182,6 +182,9 @@ $RECYCLE.BIN/
 # Data directory (contains sensitive or large data files)
 data/
 
+# Documentation (auto-generated reports)
+docs/
+
 # Temporary files
 *.tmp
 *.temp
