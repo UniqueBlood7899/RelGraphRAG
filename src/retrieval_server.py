@@ -51,15 +51,38 @@ def vector_search(query_text, top_k=5):
 # ===== Helper: Graph Traversal =====
 def graph_traversal(query_entity, hops=2):
     with driver.session(database=DB_NAME) as session:
-        cypher = f"""
-        MATCH (n)-[r*1..{hops}]-(m)
-        WHERE n.name CONTAINS $query_entity OR n.id CONTAINS $query_entity
-        RETURN DISTINCT labels(n) as n_labels, labels(m) as m_labels, n.name as n_name, m.name as m_name LIMIT 20
+        import re
+        cleaned = re.sub(r"[^a-zA-Z0-9/ ]", "", query_entity).strip().lower()
+
+        cypher = """
+        MATCH p=(n)-[r*1..2]-(m)
+        WHERE toLower(n.name) CONTAINS $cleaned
+        WITH n, m, [rel IN r WHERE type(rel) IN ['CREATED', 'CONTAINS', 'HAS_GENRE', 'HAS_TYPE', 'SUPPORTS']] AS valid_rels
+        WHERE size(valid_rels) > 0
+        RETURN DISTINCT n, m, valid_rels AS rel_types
+        LIMIT 50
         """
-        result = session.run(cypher, query_entity=query_entity)
-        return [{"n": {"labels": record["n_labels"], "name": record["n_name"]}, 
-                "m": {"labels": record["m_labels"], "name": record["m_name"]}} 
-                for record in result]
+
+        results = session.run(cypher, cleaned=cleaned)
+        
+        # Deduplicate results by node pair
+        unique_pairs = {}
+        for record in results:
+            n_name = record["n"].get("name", "")
+            m_name = record["m"].get("name", "")
+            key = (n_name, m_name)
+            
+            if key not in unique_pairs:
+                unique_pairs[key] = {
+                    "n": {"labels": list(record["n"].labels), "name": n_name},
+                    "m": {"labels": list(record["m"].labels), "name": m_name},
+                    "rel_types": record["rel_types"]
+                }
+        
+        output = list(unique_pairs.values())
+        print(f"[GraphTraversal] Query='{query_entity}' Cleaned='{cleaned}' Found={len(output)} valid ontology relationships")
+        return output
+
 
 # ===== Helper: Hybrid Retrieval =====
 def hybrid_search(nl_query):
@@ -75,9 +98,11 @@ def hybrid_search(nl_query):
         return {"mode": "vector", "results": vector_search(nl_query)}
 
     elif "related" in query or "connected" in query:
-        # Extract entity name from query - simple approach
-        words = query.split()
-        entity = words[-1] if words else ""
+        import re
+        # Extract entity after 'related to' or 'connected to'
+        match = re.search(r"(?:related|connected)\s+to\s+(.+)", query, re.IGNORECASE)
+        entity = match.group(1).strip() if match else query.split()[-1]
+        print(f"[EntityExtract] Extracted entity: '{entity}' from query: '{query}'")
         return {"mode": "graph", "results": graph_traversal(entity)}
 
     else:
