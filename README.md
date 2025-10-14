@@ -17,7 +17,25 @@ RelGraphRAG is a powerful system that automatically converts relational database
 - **Rich Embeddings**: Leverages sentence-transformers for semantic understanding
 
 ## Architecture
-![Architecture Diagram](https://drive.google.com/file/d/1KWN096NoUSDbeCGA2nXN7YRmsfG9vxGB/)
+```mermaid
+graph TB
+    A[Relational Database<br/>PostgreSQL/MySQL/SQLite/Oracle] --> B[Schema Extractor]
+    B --> C[Gemini AI<br/>Ontology Generator]
+    C --> D[Knowledge Graph Builder]
+    D --> E[Neo4j Graph Database<br/>+ Vector Embeddings]
+    E --> F[Hybrid Retrieval API]
+    F --> G[Vector Search]
+    F --> H[Graph Traversal]
+    F --> I[Relationship Reasoning]
+    G --> J[Unified Results]
+    H --> J
+    I --> J
+    
+    style A fill:#e1f5fe
+    style E fill:#f3e5f5
+    style J fill:#e8f5e8
+```
+<!-- ![Architecture Diagram](https://drive.google.com/file/d/1KWN096NoUSDbeCGA2nXN7YRmsfG9vxGB/) -->
 
 ## Demonstration
 [View PDF containing screenshots](placeholder-for-drive-link)
