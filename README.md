@@ -3,7 +3,6 @@
 [![Python](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.104.1-green.svg)](https://fastapi.tiangolo.com/)
 
-> **Transform any relational database into an intelligent knowledge graph for advanced RAG (Retrieval-Augmented Generation) applications**
 
 RelGraphRAG is a powerful system that automatically converts relational database schemas into semantic knowledge graphs, enabling hybrid retrieval combining vector similarity, graph traversal, and logical filtering for enhanced AI applications.
 
