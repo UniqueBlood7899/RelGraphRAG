@@ -19,21 +19,82 @@ RelGraphRAG is a powerful system that automatically converts relational database
 ## Architecture
 ```mermaid
 graph TB
-    A[Relational Database<br/>PostgreSQL/MySQL/SQLite/Oracle] --> B[Schema Extractor]
-    B --> C[Gemini AI<br/>Ontology Generator]
-    C --> D[Knowledge Graph Builder]
-    D --> E[Neo4j Graph Database<br/>+ Vector Embeddings]
-    E --> F[Hybrid Retrieval API]
-    F --> G[Vector Search]
-    F --> H[Graph Traversal]
-    F --> I[Relationship Reasoning]
-    G --> J[Unified Results]
-    H --> J
-    I --> J
-    
-    style A fill:#e1f5fe
-    style E fill:#f3e5f5
-    style J fill:#e8f5e8
+    subgraph Input["Data Sources"]
+        SQLite[(SQLite Database<br/>Relational Schema)]
+        RawData[("Raw Records<br/>Tables & Rows")]
+    end
+    subgraph Component1["Schema Analysis Pipeline"]
+        SchemaExtract[Extract Schema<br/>Tables, Columns, Keys]
+        GeminiAI[LLM<br/>Semantic Analysis]
+        Ontology[Generate Ontology<br/>Entity Classes & Relations]
+
+        SchemaExtract --> GeminiAI
+        GeminiAI --> Ontology
+    end
+    subgraph Component2["Graph Construction Pipeline"]
+        OntologyMap[Ontology Mapping<br/>Classes → Nodes]
+        Embeddings[SentenceTransformer<br/>Neural Embeddings]
+        Neo4jBuild[Neo4j Graph Builder<br/>Nodes & Relationships]
+
+        OntologyMap --> Embeddings
+        Embeddings --> Neo4jBuild
+    end
+    subgraph Component3["Intelligent Retrieval Engine"]
+        QueryRouter{Query Router<br/>NL Analysis}
+        VectorSearch[Vector Similarity<br/>Semantic Search]
+        GraphTraversal[Graph Traversal<br/>Relationship Exploration]
+        HybridSearch[Hybrid Strategy<br/>Combined Approach]
+        UnifiedAPI[Unified Query Interface]
+
+        QueryRouter -->|Semantic Query| VectorSearch
+        QueryRouter -->|Relationship Query| GraphTraversal
+        QueryRouter -->|Complex Query| HybridSearch
+        VectorSearch --> UnifiedAPI
+        GraphTraversal --> UnifiedAPI
+        HybridSearch --> UnifiedAPI
+    end
+    subgraph Component4["Agent Evaluation System"]
+        Benchmark[Performance Benchmarking<br/>Latency & Effectiveness]
+        Reasoning[Query Reasoning<br/>Explanation Generation]
+        Report[Evaluation Report<br/>Detailed Metrics saved to evaluation_report.md]
+
+        Benchmark --> Reasoning
+        Reasoning --> Report
+    end
+    subgraph Storage["Knowledge Graph Store"]
+        Neo4j[(Neo4j Database<br/>Nodes & Edges)]
+        SemanticEmbed[Semantic Embeddings<br/>Vector Representations]
+    end
+    subgraph Output["Results"]
+        NLQuery[Natural Language Query]
+        SearchResults[Intelligent Results<br/>Context-Aware Responses]
+    end
+    SQLite --> SchemaExtract
+    Ontology --> OntologyMap
+    RawData --> OntologyMap
+
+    Neo4jBuild --> Neo4j
+    Neo4jBuild --> SemanticEmbed
+
+    Neo4j --> QueryRouter
+    SemanticEmbed --> QueryRouter
+
+    NLQuery --> QueryRouter
+    UnifiedAPI --> SearchResults
+    UnifiedAPI --> Benchmark
+
+    style Input fill:#e1f5ff,stroke:#01579b,stroke-width:2px
+    style Component1 fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    style Component2 fill:#f3e5f5,stroke:#4a148c,stroke-width:2px
+    style Component3 fill:#e8f5e9,stroke:#1b5e20,stroke-width:2px
+    style Component4 fill:#fce4ec,stroke:#880e4f,stroke-width:2px
+    style Storage fill:#fff9c4,stroke:#f57f17,stroke-width:2px
+    style Output fill:#e0f2f1,stroke:#004d40,stroke-width:2px
+
+    style GeminiAI fill:#ffeb3b,stroke:#f57f17,stroke-width:2px
+    style Embeddings fill:#ce93d8,stroke:#4a148c,stroke-width:2px
+    style QueryRouter fill:#81c784,stroke:#2e7d32,stroke-width:3px
+    style Neo4j fill:#ffab91,stroke:#bf360c,stroke-width:2px
 ```
 <!-- ![Architecture Diagram](https://drive.google.com/file/d/1KWN096NoUSDbeCGA2nXN7YRmsfG9vxGB/) -->
 
