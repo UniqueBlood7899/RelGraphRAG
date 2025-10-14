@@ -17,7 +17,7 @@ RelGraphRAG is a powerful system that automatically converts relational database
 - **Rich Embeddings**: Leverages sentence-transformers for semantic understanding
 
 ## Architecture
-![Architecture Diagram](https://drive.google.com/file/d/1KWN096NoUSDbeCGA2nXN7YRmsfG9vxGB/view?usp=sharing)
+![Architecture Diagram](https://drive.google.com/file/d/1KWN096NoUSDbeCGA2nXN7YRmsfG9vxGB/)
 
 ## Demonstration
 [View PDF containing screenshots](placeholder-for-drive-link)
