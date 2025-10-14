@@ -40,18 +40,46 @@ console.print(f"[cyan]Using device:[/cyan] {device}")
 # === Parameters ===
 DEDUP_THRESHOLD = 0.98
 RELATION_SIM_THRESHOLD = 0.90
-ALLOWED_RELATIONS = {"PURCHASED", "CONTAINS", "BELONGS_TO", "HAS", "INCLUDES", "CREATED_BY", "PLACED_BY", "REFERENCES"}
+ALLOWED_RELATIONS = {"PURCHASED", "CONTAINS", "BELONGS_TO", "HAS", "INCLUDES", "CREATED_BY", "PLACED_BY", "REFERENCES", "CREATED", "SUPPORTS", "REPORTS_TO", "HAS_INVOICE", "IS_FOR", "HAS_TYPE", "HAS_GENRE"}
 
 # === Utility ===
 def cosine_sim(a, b):
     return cosine_similarity([a], [b])[0][0]
 
 def get_embedding(text):
-    return model.encode([text], show_progress_bar=False)[0].tolist()
+    """Get embedding and ensure it's a Python list of floats."""
+    try:
+        emb = model.encode([text], show_progress_bar=False)[0]
+        # Convert numpy array to Python list of floats, filtering NaN values
+        result = [float(x) for x in emb.tolist() if not np.isnan(x)]
+        return result if result else [0.0] * len(emb)  # Fallback for all-NaN case
+    except Exception as e:
+        console.print(f"[red]Error generating embedding for text '{text[:50]}...': {e}[/red]")
+        return [0.0] * 384  # Default embedding size for all-MiniLM-L6-v2
 
 def create_node(tx, label, props):
-    props_str = ", ".join([f"{k}: ${k}" for k in props.keys()])
-    query = f"MERGE (n:{label} {{id: $id}}) SET n += {{{props_str}}}"
+    """Create a node with properties, handling embeddings properly."""
+    # Separate embedding from other properties
+    embedding = props.pop('embedding', None)
+    
+    # Create the basic properties query
+    props_items = []
+    for k, v in props.items():
+        if k != 'id':  # id is used in MERGE clause
+            props_items.append(f"n.{k} = ${k}")
+    
+    # Build the query
+    if props_items:
+        set_clause = ", ".join(props_items)
+        query = f"MERGE (n:{label} {{id: $id}}) SET {set_clause}"
+    else:
+        query = f"MERGE (n:{label} {{id: $id}})"
+    
+    # Add embedding separately if it exists
+    if embedding is not None:
+        query += ", n.embedding = $embedding"
+        props['embedding'] = embedding
+    
     tx.run(query, **props)
 
 def create_relation(tx, src_label, src_id, rel, dst_label, dst_id):
@@ -150,7 +178,7 @@ def build_clean_graph():
             # Create nodes from actual database rows
             for i, row in enumerate(rows):
                 # Create meaningful text for embedding
-                text_parts = [label]
+                text_parts = [f"{label} entity"]
                 node_data = {"id": f"{table}_{i}"}
                 
                 # Add properties from ontology that exist in database
@@ -161,19 +189,31 @@ def build_clean_graph():
                             prop_name = prop.lower().replace(' ', '_')
                             value = str(row[col_idx])
                             node_data[prop_name] = value
-                            text_parts.append(value)
+                            text_parts.append(f"{prop}: {value}")
                 
-                # Create embedding for deduplication
+                # Create rich descriptive text for better semantic meaning
                 text = " ".join(text_parts)
-                emb = get_embedding(text)
+                
+                # Generate embedding and ensure it's Neo4j compatible
+                vec = model.encode([text], show_progress_bar=False)[0]
+                # Ensure it's a plain Python list of floats (Neo4j requirement)
+                embedding = [float(x) for x in vec.tolist() if not np.isnan(x)]
+                
+                # Skip if embedding is empty or invalid
+                if not embedding or len(embedding) == 0:
+                    console.print(f"[red]Skipping node {table}_{i} - invalid embedding[/red]")
+                    continue
 
                 # Deduplication check
                 existing_vecs = label_cache[label]
-                if any(cosine_sim(emb, v) >= DEDUP_THRESHOLD for v in existing_vecs):
+                if any(cosine_sim(embedding, v) >= DEDUP_THRESHOLD for v in existing_vecs):
                     continue
                 
-                label_cache[label].append(emb)
-                node_data["embedding_text"] = text
+                label_cache[label].append(embedding)
+                
+                # Add embedding to node data
+                node_data["embedding"] = embedding
+                node_data["name"] = node_data.get("name", f"{table}_{i}")  # Ensure name exists
                 
                 # Store row data for foreign key relationships
                 row_data = {}
@@ -190,7 +230,7 @@ def build_clean_graph():
                 try:
                     session.execute_write(create_node, label, node_data)
                 except Exception as e:
-                    console.print(f"[red]Error creating node: {e}[/red]")
+                    console.print(f"[red]Error creating node {node_data['id']}: {e}[/red]")
 
         # ---- Create ontology relationships ----
         console.print("[cyan]Creating ontology relationships...[/cyan]")
@@ -282,11 +322,17 @@ def verify_graph():
         
         console.print(f"[green]Total: {total_nodes} nodes, {total_rels} relationships[/green]")
         
+        # Test embedding storage
+        result = session.run("MATCH (n) WHERE n.embedding IS NOT NULL RETURN count(n) as embedding_count")
+        for record in result:
+            console.print(f"[green]Nodes with embeddings: {record['embedding_count']}[/green]")
+        
         # Show sample data
-        result = session.run("MATCH (n) RETURN labels(n)[0] as label, n.id as id, keys(n) as props LIMIT 3")
+        result = session.run("MATCH (n) RETURN labels(n)[0] as label, n.id as id, n.name as name, size(n.embedding) as emb_size LIMIT 3")
         console.print("[blue]Sample nodes:[/blue]")
         for record in result:
-            console.print(f"  {record['label']} ({record['id']}): {len(record['props'])} properties")
+            emb_info = f"embedding: {record['emb_size']} dims" if record['emb_size'] else "no embedding"
+            console.print(f"  {record['label']} ({record['id']}): {record['name']}, {emb_info}")
 
 if __name__ == "__main__":
     try:
