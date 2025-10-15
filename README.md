@@ -98,7 +98,7 @@ graph TB
 <!-- ![Architecture Diagram](https://drive.google.com/file/d/1KWN096NoUSDbeCGA2nXN7YRmsfG9vxGB/) -->
 
 ## Demonstration
-[View RelGraphRAG Demo & Screenshots](docs/RelGraphRAG.pdf)
+[View RelGraphRAG Demo & Screenshots](/RelGraphRAG.pdf)
 
 ## Installation
 
